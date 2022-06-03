@@ -1,0 +1,86 @@
+---
+title: "AAPI Counterframes"
+author: "Alejandra Regla-Vargas"
+date: '2022-06-03'
+output: word_document
+---
+
+#Set packages and working directory 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+pacman::p_load(academictwitteR, jsonlite, lubridate, textclean, tm, tidytext)
+setwd("~/Desktop")
+```
+
+#Set-up API
+```{r}
+#Instructions: https://cran.r-project.org/web/packages/academictwitteR/index.html
+usethis::edit_r_environ()
+get_bearer() 
+```
+
+#Scrape counterhashtags 
+```{r}
+#Hashtags: #IAmNotAVirus, #WashTheHate, #RacismIsAVirus, #IAmNotCovid19, #BeCool2Asians, #StopAAPIHate, #ActToChange, #HateIsAVirus
+
+#AJ: #IAmNotAVirus, #WashTheHate, #RacismIsAVirus, #IAmNotCovid19,
+#Alejandra: #BeCool2Asians, #StopAAPIHate, #ActToChange, #HateIsAVirus
+```
+#1: StopAAPIHate
+```{r}
+df <-
+  get_all_tweets(
+    query = "#StopAAPIHate",
+    start_tweets = "2020-01-15T00:00:00Z",
+    end_tweets = "2021-03-26T00:00:00Z",
+    bind_tweets = FALSE,
+    is_retweet = FALSE,
+    data_path = "aapi_counter_1/",
+    n= 200000
+  )
+```
+
+#Bind tweets 
+```{r}
+df_tweets <- bind_tweets(data_path = "aapi_counter_1")
+df_sub <- df_tweets[,c("text", "created_at", "lang")] #subset variables
+df_eng <- subset(df_sub, lang == 'en') #subset English tweets 
+```
+
+#Export text data
+```{r}
+write.csv(x = df_eng, file = "df_appi_1", row.names= TRUE)
+```
+#Clean text data 
+
+#Clean dates
+```{r}
+df_eng$date <- date(df_eng$created_at) #format dates
+table(df_eng$date) #view dates 
+```
+#Clean text | Note: I like to run each line individually,
+as code can sometimes create additional errors 
+```{r}
+df_eng$clean_text <- str_replace_all(df_eng$text,"#[a-z,A-Z]*","") #remove hashtags
+df_eng$clean_text <- str_replace_all(df_eng$clean_text,"@[a-z,A-Z]*","") #remove @signs 
+df_eng$clean_text <- gsub("http.*","",  df_eng$clean_text) #remove urls 
+df_eng$clean_text <- tolower(df_eng$clean_text) #lower text 
+df_eng$clean_text <- gsub("[[:punct:]]", "", df_eng$clean_text) #remove punctuation
+df_eng$clean_text <- gsub("\n", "", df_eng$clean_text) #remove \n from text 
+df_eng$clean_text <- removeNumbers(df_eng$clean_text) #remove numbers 
+df_eng$clean_text <- removeWords(df_eng$clean_text, stopwords("english")) #remove stop words 
+df_eng$clean_text <- gsub("amp", "", df_eng$clean_text) #remove amp from text 
+df_eng$clean_text <- gsub("<(.*)>", "", df_eng$clean_text) #remove unicodes
+df_eng$clean_text <- replace_word_elongation(df_eng$clean_text) #remove text elongation
+df_eng$clean_text <- gsub("rt", "", df_eng$clean_text) #remove amp from text 
+
+#remove space 
+df_eng$clean_text <- gsub("^[[:space:]]*","",df_eng$clean_text) # remove leading white spaces
+df_eng$clean_text <- gsub("[[:space:]]*$","",df_eng$clean_text) # remove trailing white spaces
+df_eng$clean_text <- gsub(" +"," ",df_eng$clean_text) # remove extra whitespaces
+```
+
+#View text data 
+```{r}
+table(df_eng$clean_text #view text data
+```
